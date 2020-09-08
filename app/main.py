@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from datetime import datetime
 from pytz import timezone
-import requests, json, os
+import requests, json, os, time
 
 from google.cloud import firestore, storage, logging
 
@@ -68,9 +68,10 @@ def write_recalls():
             if item['recallId'] not in recall_ids:
                 data = {
                     'title': item['title'],
-                    #'datePublished': datetime.fromtimestamp(int(item['date_published'])),
-                    'datePublished': item['date_published'],
+                    'datePublished': datetime.fromtimestamp(int(item['date_published'])),
+                    #'datePublished': item['date_published'],
                     'category': 'HEALTH',
+                    'timestamp': firestore.SERVER_TIMESTAMP,
                     #'url': item['url'],
                 }
                 doc_ref = db.collection('recalls').document(item['recallId']).set(data)
@@ -85,9 +86,10 @@ def write_recalls():
             if item['recallId'] not in recall_ids:
                 data = {
                     'title': item['title'],
-                    #'datePublished': datetime.fromtimestamp(int(item['date_published'])),
-                    'datePublished': item['date_published'],
+                    'datePublished': datetime.fromtimestamp(int(item['date_published'])),
+                    #'datePublished': item['date_published'],
                     'category': 'FOOD',
+                    'timestamp': firestore.SERVER_TIMESTAMP,
                     #'url': item['url'],
                 }
                 doc_ref = db.collection('recalls').document(item['recallId']).set(data)
@@ -102,9 +104,10 @@ def write_recalls():
             if item['recallId'] not in recall_ids:
                 data = {
                     'title': item['title'],
-                    #'datePublished': datetime.fromtimestamp(int(item['date_published'])),
-                    'datePublished': item['date_published'],
+                    'datePublished': datetime.fromtimestamp(int(item['date_published'])),
+                    #'datePublished': item['date_published'],
                     'category': 'CPS',
+                    'timestamp': firestore.SERVER_TIMESTAMP,
                     #'url': item['url'],
                 }
                 doc_ref = db.collection('recalls').document(item['recallId']).set(data)
@@ -152,6 +155,46 @@ def get_recalls():
     #return {"Completed" : "Request'"}
     return recalls
 
+#Testing if I can filter by date
+@app.get("/recalls_by_date")
+def get_recalls_by_date():
+   
+    print('Inside Get Recalls')
+    
+    recalls = []
+    db = firestore.Client()
+    start_date = datetime(2020, 9, 1, 0, 0)
+    #print('Start Date is', start_date)
+    start_date_epoch = time.mktime(start_date.timetuple())
+    print('Time in epoch format is ', start_date_epoch)
+    #doc_ref = db.collection('recalls').document('73731')
+    docs = db.collection('recalls')
+    print('Before Streaming')
+    doc_filtered = docs.where('datePublished', '>', datetime.fromtimestamp(1598943600)).stream()
+    print('After Streaming')
+    #doc = doc_ref.get()
+    #docs = doc_ref
+    
+    for doc in doc_filtered:
+        print(f'{doc.id} => {doc.to_dict()}')
+        recall_dict = doc.to_dict()
+        recall_dict['id'] = doc.id
+        #recall_obj = Recall(doc.id, doc.category, doc.datePublished, doc.title, doc.url)
+        recalls.append(recall_dict)
+
+    print("Created an array of docs")
+    #if docs.exists:
+    #    print(f'Document data: {docs.to_dict()}')
+    #else:
+    #    print('No Doc Ref')
+    #test_recall = Recall(id=73731, category=Category(categoryId=[4]), title="Something", url="/api/73731/en")
+    #json_compatible_data = jsonable_encoder(doc.to_dict())
+    #return JSONResponse(content=json_compatible_data)
+    #json_compatible_data = jsonable_encoder(docs)
+    #return JSONResponse(content=json_compatible_data)
+    #return Response(content=recalls, media_type="application/json")
+    #return {"Completed" : "Request'"}
+    return recalls
  
 
         
